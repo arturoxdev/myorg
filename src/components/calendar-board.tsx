@@ -20,13 +20,14 @@ import { scheduleTask, toggleTask } from "@/actions/tasks"
 import { CategoryIcon } from "@/components/category-icon"
 import type { TaskFormCategory } from "@/components/task-form"
 import { TaskSheet } from "@/components/task-sheet"
+import { TaskTitle } from "@/components/task-title"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Category, Task } from "@/db/schema"
+import { useCompleteAnimation } from "@/hooks/use-complete-animation"
 import { getPriority } from "@/lib/priority"
-import { playCompleteSound } from "@/lib/sounds"
 import { cn } from "@/lib/utils"
 
 type CalendarTask = Task & { category: Category | null }
@@ -69,9 +70,10 @@ export function CalendarBoard({ tasks, categories, days, today }: Props) {
     else if (task.dueDate < today) overdue.push(task)
   }
 
-  function update(change: Change, action: () => Promise<void>) {
+  function update(change: Change, action: () => Promise<void>, onStart?: () => void) {
     startTransition(async () => {
       applyChange(change)
+      onStart?.()
       try {
         await action()
       } catch {
@@ -80,10 +82,10 @@ export function CalendarBoard({ tasks, categories, days, today }: Props) {
     })
   }
 
-  function onToggle(id: string, completed: boolean) {
-    if (completed) playCompleteSound()
-    update({ id, completed }, () => toggleTask(id, completed))
-  }
+  // Al completar, la tarea se tacha antes de bajar al final de su día (o salir del panel).
+  const { completing, toggle } = useCompleteAnimation((id, completed, settle) =>
+    update({ id, completed }, () => toggleTask(id, completed), settle)
+  )
 
   function onDragEnd({ active, over }: DragEndEvent) {
     setActiveId(null)
@@ -98,7 +100,7 @@ export function CalendarBoard({ tasks, categories, days, today }: Props) {
   }
 
   const activeTask = activeId ? optimisticTasks.find((t) => t.id === activeId) : undefined
-  const cardProps = { onToggle, onOpen: (task: Task) => openSheet({ task }) }
+  const cardProps = { completing, onToggle: toggle, onOpen: (task: Task) => openSheet({ task }) }
 
   return (
     <DndContext
@@ -290,6 +292,8 @@ type CardProps = {
   task: CalendarTask
   showCategory?: boolean
   showDate?: boolean
+  /** Tareas con la animación de completar en curso. */
+  completing?: ReadonlySet<string>
   onToggle?: (id: string, completed: boolean) => void
   onOpen?: (task: Task) => void
   className?: string
@@ -307,7 +311,16 @@ function DraggableTask({ from, ...props }: CardProps & { from: string }) {
   )
 }
 
-function TaskCard({ task, showCategory, showDate, onToggle, onOpen, className }: CardProps) {
+function TaskCard({
+  task,
+  showCategory,
+  showDate,
+  completing,
+  onToggle,
+  onOpen,
+  className,
+}: CardProps) {
+  const completed = task.completed || !!completing?.has(task.id)
   const priority = getPriority(task.priority)
   return (
     <div
@@ -318,22 +331,17 @@ function TaskCard({ task, showCategory, showDate, onToggle, onOpen, className }:
     >
       <Checkbox
         className="mt-0.5"
-        checked={task.completed}
+        checked={completed}
         onCheckedChange={(v) => onToggle?.(task.id, v === true)}
-        aria-label={task.completed ? "Marcar como pendiente" : "Marcar como completada"}
+        aria-label={completed ? "Marcar como pendiente" : "Marcar como completada"}
       />
       <button
         type="button"
         onClick={() => onOpen?.(task)}
         className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <span
-          className={cn(
-            "line-clamp-3 text-sm",
-            task.completed && "text-muted-foreground line-through"
-          )}
-        >
-          {task.title}
+        <span className="line-clamp-3 text-sm">
+          <TaskTitle completed={completed}>{task.title}</TaskTitle>
         </span>
         <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">

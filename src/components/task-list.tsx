@@ -10,11 +10,12 @@ import { toggleTask } from "@/actions/tasks"
 import { CategoryIcon } from "@/components/category-icon"
 import type { TaskFormCategory } from "@/components/task-form"
 import { TaskSheet } from "@/components/task-sheet"
+import { TaskTitle } from "@/components/task-title"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Category, Task } from "@/db/schema"
+import { useCompleteAnimation } from "@/hooks/use-complete-animation"
 import { getPriority } from "@/lib/priority"
-import { playCompleteSound } from "@/lib/sounds"
 import { cn } from "@/lib/utils"
 
 type TaskWithCategory = Task & { category: Category | null }
@@ -44,10 +45,11 @@ export function TaskList({ tasks, categories, grouped = true }: Props) {
       state.map((t) => (t.id === id ? { ...t, completed, updatedAt: new Date() } : t))
   )
 
-  function onToggle(id: string, completed: boolean) {
-    if (completed) playCompleteSound()
+  // Al completar, la tarea se tacha y luego pasa a "Completadas".
+  const { completing, toggle } = useCompleteAnimation((id, completed, settle) => {
     startTransition(async () => {
       setOptimistic({ id, completed })
+      settle()
       try {
         await toggleTask(id, completed)
         toast.success(completed ? "Tarea completada" : "Tarea marcada como pendiente")
@@ -55,7 +57,7 @@ export function TaskList({ tasks, categories, grouped = true }: Props) {
         toast.error("No se pudo actualizar la tarea")
       }
     })
-  }
+  })
 
   function onOpen(task: Task) {
     setSelected(task)
@@ -69,7 +71,15 @@ export function TaskList({ tasks, categories, grouped = true }: Props) {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
   const rows = (list: TaskWithCategory[]) =>
-    list.map((task) => <TaskRow key={task.id} task={task} onToggle={onToggle} onOpen={onOpen} />)
+    list.map((task) => (
+      <TaskRow
+        key={task.id}
+        task={task}
+        completed={task.completed || completing.has(task.id)}
+        onToggle={toggle}
+        onOpen={onOpen}
+      />
+    ))
 
   return (
     <>
@@ -128,36 +138,34 @@ function TaskSection({
 
 function TaskRow({
   task,
+  completed,
   onToggle,
   onOpen,
 }: {
   task: TaskWithCategory
+  /** Incluye la animación en curso: se ve completada antes de guardarse. */
+  completed: boolean
   onToggle: (id: string, completed: boolean) => void
   onOpen: (task: Task) => void
 }) {
   const priority = getPriority(task.priority)
-  const overdue = !task.completed && task.dueDate && isBefore(parseISO(task.dueDate), startOfToday())
+  const overdue = !completed && task.dueDate && isBefore(parseISO(task.dueDate), startOfToday())
 
   return (
     <li className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
       <Checkbox
         className="mt-0.5"
-        checked={task.completed}
+        checked={completed}
         onCheckedChange={(v) => onToggle(task.id, v === true)}
-        aria-label={task.completed ? "Marcar como pendiente" : "Marcar como completada"}
+        aria-label={completed ? "Marcar como pendiente" : "Marcar como completada"}
       />
       <button
         type="button"
         onClick={() => onOpen(task)}
         className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <span
-          className={cn(
-            "truncate text-sm font-medium",
-            task.completed && "text-muted-foreground line-through"
-          )}
-        >
-          {task.title}
+        <span className="truncate text-sm font-medium">
+          <TaskTitle completed={completed}>{task.title}</TaskTitle>
         </span>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
