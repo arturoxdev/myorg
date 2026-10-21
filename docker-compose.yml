@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: myorg-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myorg
+    ports:
+      - "5433:5432"
+    volumes:
+      - myorg-db:/var/lib/postgresql/data
+
+volumes:
+  myorg-db:
