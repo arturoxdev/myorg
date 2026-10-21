@@ -148,3 +148,23 @@
     color: var(--muted-foreground);
   }
 }
+
+/* Tachado animado del título de una tarea al completarla (TaskTitle). */
+.task-title {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 55%;
+  background-size: 0% 2px;
+  transition:
+    background-size 500ms cubic-bezier(0.65, 0, 0.35, 1),
+    color 250ms ease-out 500ms;
+}
+.task-title[data-completed="true"] {
+  background-size: 100% 2px;
+  color: var(--muted-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .task-title {
+    transition: none;
+  }
+}
