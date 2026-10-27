@@ -3,7 +3,7 @@
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
 import { CalendarDays, CircleCheck, Flag, Tag, Trash2, X } from "lucide-react"
-import { useRef, useState, useTransition } from "react"
+import { useLayoutEffect, useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { deleteTask, saveTask, toggleTask, type TaskInput } from "@/actions/tasks"
@@ -23,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
@@ -36,6 +35,7 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import type { Category, Task } from "@/db/schema"
 import { PRIORITIES } from "@/lib/priority"
 import { playCompleteSound } from "@/lib/sounds"
@@ -148,6 +148,23 @@ export function TaskForm({
     })
   }
 
+  // El título crece hacia abajo para mostrarse siempre completo
+  // (respaldo para navegadores sin soporte de field-sizing).
+  const titleRef = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [values.title])
+
+  // El título es de una sola línea: Enter envía el formulario como en un input.
+  function onTitleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    if (!pending && !uploading) formRef.current?.requestSubmit()
+  }
+
   const dueDate = values.dueDate ? parseISO(values.dueDate) : undefined
 
   const titleField = (
@@ -155,12 +172,15 @@ export function TaskForm({
       <FieldLabel htmlFor="title" className="sr-only">
         Título
       </FieldLabel>
-      <Input
+      <Textarea
+        ref={titleRef}
         id="title"
+        rows={1}
         value={values.title}
-        onChange={(e) => set("title", e.target.value)}
+        onChange={(e) => set("title", e.target.value.replace(/\r?\n/g, " "))}
+        onKeyDown={onTitleKeyDown}
         placeholder="Título de la tarea"
-        className="h-auto border-none px-0 py-0 text-xl leading-tight font-semibold tracking-tight shadow-none focus-visible:ring-0 md:text-xl dark:bg-transparent"
+        className="min-h-11 resize-none overflow-hidden rounded-none border-none px-0 py-1.5 text-xl leading-tight font-semibold tracking-tight break-words shadow-none focus-visible:ring-0 md:text-xl dark:bg-transparent"
         required
         data-autofocus={!task || undefined}
       />
