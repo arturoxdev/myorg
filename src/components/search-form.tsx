@@ -23,9 +23,9 @@ export function SearchForm({ ...props }: React.ComponentProps<"form">) {
             name="q"
             defaultValue={searchParams.get("q") ?? ""}
             placeholder="Buscar tareas..."
-            className="pl-8"
+            className="ps-8 dark:bg-input/30"
           />
-          <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 opacity-50 select-none" />
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground select-none" />
         </SidebarGroupContent>
       </SidebarGroup>
     </form>

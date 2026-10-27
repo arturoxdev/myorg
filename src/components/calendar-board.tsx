@@ -12,16 +12,17 @@ import {
 } from "@dnd-kit/core"
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
-import { ChevronRight, CirclePlus, Plus } from "lucide-react"
+import { ChevronRight, Plus } from "lucide-react"
+import * as React from "react"
 import { useOptimistic, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { scheduleTask, toggleTask } from "@/actions/tasks"
 import { CategoryIcon } from "@/components/category-icon"
 import type { TaskFormCategory } from "@/components/task-form"
+import { PriorityDot } from "@/components/task-badges"
 import { TaskSheet } from "@/components/task-sheet"
 import { TaskTitle } from "@/components/task-title"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -148,7 +149,7 @@ export function CalendarBoard({ tasks, categories, days, today }: Props) {
           </PanelGroup>
         </UnscheduledPanel>
 
-        <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto p-3">
+        <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto p-2 md:p-3">
           {days.map((day) => (
             <DayColumn
               key={day}
@@ -169,7 +170,9 @@ export function CalendarBoard({ tasks, categories, days, today }: Props) {
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {activeTask && <TaskCard task={activeTask} showCategory className="cursor-grabbing shadow-lg" />}
+        {activeTask && (
+          <TaskCard task={activeTask} showCategory className="cursor-grabbing shadow-lg ring-foreground/15" />
+        )}
       </DragOverlay>
 
       <TaskSheet
@@ -190,11 +193,11 @@ function UnscheduledPanel({ children }: { children: React.ReactNode }) {
     <aside
       ref={setNodeRef}
       className={cn(
-        "flex max-h-72 shrink-0 flex-col gap-4 overflow-y-auto border-b p-3 transition-colors md:max-h-none md:w-72 md:border-r md:border-b-0",
-        isOver && "bg-muted/60"
+        "flex max-h-72 shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain border-b bg-muted/30 p-3 transition-colors duration-150 md:max-h-none md:w-72 md:border-e md:border-b-0",
+        isOver && "bg-muted/70"
       )}
     >
-      <div className="px-1">
+      <div className="flex flex-col gap-0.5 px-1">
         <h2 className="text-sm font-medium">Sin fecha</h2>
         <p className="text-xs text-muted-foreground">Arrastra una tarea a un día para programarla.</p>
       </div>
@@ -219,31 +222,36 @@ function PanelGroup({
   children: React.ReactNode
 }) {
   return (
-    <Collapsible defaultOpen className="group/panel flex flex-col gap-1.5">
+    <Collapsible defaultOpen className="group/panel flex flex-col">
       <CollapsibleTrigger
         className={cn(
           "flex cursor-pointer items-center gap-1.5 rounded-sm px-1 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
           className
         )}
       >
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/panel:rotate-90" />
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground group-data-[state=open]/panel:rotate-90 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out" />
         {icon}
         <span className="truncate">{title}</span>
-        {count > 0 && <span className="font-normal text-muted-foreground">{count}</span>}
-      </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-1.5">
-        {children}
-        {onAdd && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start text-muted-foreground"
-            onClick={onAdd}
-          >
-            <Plus />
-            Nueva tarea
-          </Button>
+        {count > 0 && (
+          <span className="ms-auto text-xs font-normal text-muted-foreground tabular-nums">{count}</span>
         )}
+      </CollapsibleTrigger>
+      {/* El contenido cerrado sigue montado, así que el espacio va dentro y no como gap. */}
+      <CollapsibleContent>
+        <div className="flex flex-col gap-1.5 pt-2">
+          {children}
+          {onAdd && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="icon-stroke-regular justify-start font-normal text-muted-foreground"
+              onClick={onAdd}
+            >
+              <Plus />
+              Nueva tarea
+            </Button>
+          )}
+        </div>
       </CollapsibleContent>
     </Collapsible>
   )
@@ -262,28 +270,49 @@ function DayColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: day })
   const date = parseISO(day)
+  const empty = !React.Children.count(children)
   return (
     <section
       ref={setNodeRef}
       className={cn(
-        "flex w-72 shrink-0 flex-col gap-2 rounded-xl p-2 transition-colors",
-        isOver && "bg-muted/60"
+        "group/day flex w-64 shrink-0 flex-col gap-2 rounded-2xl bg-muted/40 p-2 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 dark:bg-muted/20",
+        isOver && "bg-muted/80 ring-foreground/10 dark:bg-muted/40"
       )}
     >
-      <header className="flex items-baseline gap-1.5 px-1 py-1">
-        <h2 className="text-base font-semibold capitalize">{format(date, "EEEE", { locale: es })}</h2>
-        <span className="text-base text-muted-foreground">{format(date, "d MMM", { locale: es })}</span>
-        {isToday && (
-          <Badge className="ml-auto self-center" variant="secondary">
-            Hoy
-          </Badge>
-        )}
+      <header className="flex h-8 items-center gap-2 ps-1.5">
+        <span
+          className={cn(
+            "flex size-6 items-center justify-center rounded-md text-xs font-semibold tabular-nums",
+            isToday ? "bg-primary text-primary-foreground" : "border border-transparent bg-background text-foreground ring-1 ring-foreground/10"
+          )}
+        >
+          {format(date, "d")}
+        </span>
+        <h2 className="text-sm font-medium capitalize">{format(date, "EEEE", { locale: es })}</h2>
+        {isToday && <span className="text-xs text-muted-foreground">Hoy</span>}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="ms-auto text-muted-foreground"
+          onClick={onAdd}
+          aria-label={`Agregar tarea el ${format(date, "EEEE d 'de' MMMM", { locale: es })}`}
+        >
+          <Plus />
+        </Button>
       </header>
-      <Button variant="secondary" className="justify-start font-normal text-muted-foreground" onClick={onAdd}>
-        <CirclePlus />
-        Agregar tarea
-      </Button>
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
+        {children}
+        {empty && (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex h-16 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed text-xs text-muted-foreground transition-colors duration-150 outline-none hover:bg-background/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <Plus className="size-3.5" />
+            Agregar tarea
+          </button>
+        )}
+      </div>
     </section>
   )
 }
@@ -321,11 +350,10 @@ function TaskCard({
   className,
 }: CardProps) {
   const completed = task.completed || !!completing?.has(task.id)
-  const priority = getPriority(task.priority)
   return (
     <div
       className={cn(
-        "flex cursor-grab items-start gap-2.5 rounded-lg border bg-card p-2.5 text-card-foreground shadow-xs",
+        "flex cursor-grab items-start gap-2.5 rounded-lg border border-transparent bg-card p-[9px] text-card-foreground shadow-xs ring-1 ring-foreground/10 transition-shadow duration-150 hover:ring-foreground/20",
         className
       )}
     >
@@ -343,13 +371,13 @@ function TaskCard({
         <span className="line-clamp-3 text-sm">
           <TaskTitle completed={completed}>{task.title}</TaskTitle>
         </span>
-        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+        <span className="icon-stroke-regular flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <span className={cn("size-2 rounded-full", priority.className)} />
-            {priority.label}
+            <PriorityDot priority={task.priority} />
+            {getPriority(task.priority).label}
           </span>
           {showDate && task.dueDate && (
-            <span className="text-destructive">
+            <span className="text-destructive tabular-nums">
               {format(parseISO(task.dueDate), "d MMM", { locale: es })}
             </span>
           )}

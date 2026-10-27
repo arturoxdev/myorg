@@ -21,16 +21,21 @@ export function NavUser({ username }: { username: string }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="rounded-2xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="size-8 rounded-lg">
-                <AvatarFallback className="rounded-lg uppercase">{username.slice(0, 2)}</AvatarFallback>
+                <AvatarFallback className="rounded-lg border border-transparent bg-background text-xs font-medium uppercase ring-1 ring-foreground/10">
+                  {username.slice(0, 2)}
+                </AvatarFallback>
               </Avatar>
-              <span className="truncate font-medium">{username}</span>
-              <ChevronsUpDown className="ml-auto" />
+              <div className="flex min-w-0 flex-col gap-1 leading-none">
+                <span className="truncate font-medium">{username}</span>
+                <span className="text-xs text-muted-foreground">Cuenta personal</span>
+              </div>
+              <ChevronsUpDown className="ms-auto text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)" side="top" align="start">
+          <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)" side="top" align="start" sideOffset={6}>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Sesión iniciada</DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => logout()}>
               <LogOut />

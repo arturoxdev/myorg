@@ -19,7 +19,7 @@ async function Content({ params, searchParams }: PageProps<"/categories/[id]">) 
     <TasksView
       categoryId={category.id}
       title={category.name}
-      icon={<CategoryIcon category={category} className="size-8 text-2xl" />}
+      icon={<CategoryIcon category={category} className="size-5 text-lg" />}
       q={typeof q === "string" ? q : undefined}
     />
   )

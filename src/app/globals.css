@@ -39,6 +39,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -77,10 +82,12 @@
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.205 0 0 / 5%);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --success: oklch(0.696 0.17 162.48);
+  --warning: oklch(0.769 0.188 70.08);
 }
 
 .dark {
@@ -109,12 +116,14 @@
   --chart-5: oklch(0.269 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.922 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --success: oklch(0.765 0.177 163.223);
+  --warning: oklch(0.828 0.189 84.429);
 }
 
 @layer base {
@@ -127,7 +136,12 @@
   html {
     @apply font-sans;
   }
+  ::selection {
+    @apply bg-foreground text-background;
+  }
 }
+
+
 /* Editor de descripción (Tiptap) */
 .tiptap {
   & > * + * { margin-top: 0.5em; }
@@ -163,8 +177,119 @@
   background-size: 100% 2px;
   color: var(--muted-foreground);
 }
+/* Sin movimiento, el tachado aparece de golpe pero el color se sigue desvaneciendo. */
 @media (prefers-reduced-motion: reduce) {
   .task-title {
-    transition: none;
+    transition: color 150ms ease-out;
+  }
+}
+
+/*
+ * Trazo de los íconos Lucide en píxeles reales: dibujan en una grilla de 24px,
+ * así que a 16px su stroke-width="2" pintaba ~1.33px. 2px acompaña al texto
+ * medium/semibold (botones, títulos); 1.5px al texto regular.
+ */
+svg.lucide * {
+  vector-effect: non-scaling-stroke;
+}
+:where(
+  [data-slot="sidebar-menu-button"]:not([data-active="true"]),
+  [data-slot="sidebar-menu-sub-button"],
+  [data-slot="dropdown-menu-item"],
+  [data-slot="select-item"],
+  .icon-stroke-regular
+) svg.lucide {
+  stroke-width: 1.5px;
+}
+
+/*
+ * Overlays de Radix con transiciones en vez de keyframes, para que se reviertan
+ * si se reabren a mitad de camino. Radix (Presence) solo espera a una animación
+ * antes de desmontar, así que el estado cerrado corre `overlay-hold`, un keyframe
+ * sin efecto visual con la misma duración que la transición de salida.
+ * Movimiento y escala solo sin `prefers-reduced-motion`; con él queda el fundido.
+ */
+@keyframes overlay-hold {
+  to { --overlay-hold: 1; }
+}
+
+/* Fondos de diálogos y paneles. */
+.motion-fade {
+  transition: opacity 150ms ease-out;
+}
+.motion-fade[data-state="closed"] {
+  opacity: 0;
+  animation: overlay-hold 150ms;
+}
+@starting-style {
+  .motion-fade:not([data-state="closed"]) {
+    opacity: 0;
+  }
+}
+
+/* Menús, popovers, tooltips y diálogos: fundido con zoom desde su origen. */
+.motion-pop {
+  transition: opacity 100ms ease-out;
+}
+.motion-pop[data-state="closed"] {
+  opacity: 0;
+  animation: overlay-hold 100ms;
+}
+@starting-style {
+  .motion-pop:not([data-state="closed"]) {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .motion-pop {
+    transition-property: opacity, scale, translate;
+  }
+  .motion-pop[data-state="closed"] {
+    scale: 0.95;
+  }
+  .motion-pop[data-side="bottom"] { --pop-from: 0 -0.5rem; }
+  .motion-pop[data-side="top"] { --pop-from: 0 0.5rem; }
+  .motion-pop[data-side="left"] { --pop-from: 0.5rem 0; }
+  .motion-pop[data-side="right"] { --pop-from: -0.5rem 0; }
+  @starting-style {
+    .motion-pop:not([data-state="closed"]) {
+      scale: 0.95;
+    }
+    .motion-pop[data-side]:not([data-state="closed"]) {
+      translate: var(--pop-from);
+    }
+  }
+}
+
+/* Panel lateral (Sheet): entra deslizándose y sale por el mismo borde. */
+.motion-sheet {
+  transition: opacity 300ms var(--ease-drawer);
+}
+.motion-sheet[data-state="closed"] {
+  opacity: 0;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+  animation: overlay-hold 200ms;
+}
+@starting-style {
+  .motion-sheet:not([data-state="closed"]) {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .motion-sheet {
+    transition-property: opacity, translate;
+  }
+  .motion-sheet[data-side="right"] { --sheet-from: calc(100% + 0.5rem) 0; }
+  .motion-sheet[data-side="left"] { --sheet-from: calc(-100% - 0.5rem) 0; }
+  .motion-sheet[data-side="top"] { --sheet-from: 0 -100%; }
+  .motion-sheet[data-side="bottom"] { --sheet-from: 0 100%; }
+  .motion-sheet[data-state="closed"] {
+    translate: var(--sheet-from);
+  }
+  @starting-style {
+    .motion-sheet:not([data-state="closed"]) {
+      translate: var(--sheet-from);
+    }
   }
 }

@@ -21,12 +21,13 @@ async function SessionSidebar() {
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <SidebarProvider>
+    // Alto fijo: el contenido se desplaza dentro del panel y el header queda fijo arriba.
+    <SidebarProvider className="h-svh">
       <Suspense fallback={<AppSidebarSkeleton />}>
         <SessionSidebar />
       </Suspense>
       {/* min-w-0: el calendario se desplaza en horizontal sin ensanchar la página. */}
-      <SidebarInset className="min-w-0">{children}</SidebarInset>
+      <SidebarInset className="min-w-0 overflow-y-auto">{children}</SidebarInset>
     </SidebarProvider>
   )
 }

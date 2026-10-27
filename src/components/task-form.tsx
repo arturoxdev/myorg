@@ -2,7 +2,7 @@
 
 import { format, parseISO } from "date-fns"
 import { es } from "date-fns/locale"
-import { CalendarDays, Trash2, X } from "lucide-react"
+import { CalendarDays, CircleCheck, Flag, Tag, Trash2, X } from "lucide-react"
 import { useLayoutEffect, useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -42,6 +42,30 @@ import { playCompleteSound } from "@/lib/sounds"
 import { cn } from "@/lib/utils"
 
 const NO_CATEGORY = "none"
+
+/** Trigger de propiedad sin borde: se ve como texto hasta pasar el mouse. */
+const ghost =
+  "w-full justify-start border-transparent bg-transparent font-normal shadow-none hover:bg-muted aria-expanded:bg-muted dark:bg-transparent dark:hover:bg-muted/50 [&>svg:last-child]:ms-auto [&>svg:last-child]:opacity-0 hover:[&>svg:last-child]:opacity-100 focus-visible:[&>svg:last-child]:opacity-100"
+
+function PropertyRow({
+  label,
+  icon,
+  children,
+}: {
+  label: string
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid grid-cols-[7.5rem_1fr] items-center gap-2">
+      <dt className="flex items-center gap-2 text-sm text-muted-foreground [&_svg]:size-4">
+        {icon}
+        {label}
+      </dt>
+      <dd className="min-w-0">{children}</dd>
+    </div>
+  )
+}
 
 export type TaskFormCategory = Pick<Category, "id" | "name" | "emoji" | "iconKey">
 
@@ -156,7 +180,7 @@ export function TaskForm({
         onChange={(e) => set("title", e.target.value.replace(/\r?\n/g, " "))}
         onKeyDown={onTitleKeyDown}
         placeholder="Título de la tarea"
-        className="min-h-11 resize-none overflow-hidden rounded-none border-none px-0 py-1.5 text-xl font-semibold break-words shadow-none focus-visible:ring-0 md:text-xl dark:bg-transparent"
+        className="min-h-11 resize-none overflow-hidden rounded-none border-none px-0 py-1.5 text-xl leading-tight font-semibold tracking-tight break-words shadow-none focus-visible:ring-0 md:text-xl dark:bg-transparent"
         required
         data-autofocus={!task || undefined}
       />
@@ -176,17 +200,16 @@ export function TaskForm({
   )
 
   const dateField = (
-    <Field>
-      <FieldLabel>Fecha</FieldLabel>
+    <PropertyRow label="Fecha" icon={<CalendarDays />}>
       <div className="flex gap-1">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
               type="button"
-              variant="outline"
-              className={cn("flex-1 justify-start font-normal", !dueDate && "text-muted-foreground")}
+              variant="ghost"
+              size="sm"
+              className={cn("flex-1 justify-start text-sm font-normal", !dueDate && "text-muted-foreground")}
             >
-              <CalendarDays />
               {dueDate ? format(dueDate, "d 'de' MMMM yyyy", { locale: es }) : "Sin fecha"}
             </Button>
           </PopoverTrigger>
@@ -207,7 +230,8 @@ export function TaskForm({
           <Button
             type="button"
             variant="ghost"
-            size="icon"
+            size="icon-sm"
+            className="text-muted-foreground"
             onClick={() => set("dueDate", null)}
             aria-label="Quitar fecha"
           >
@@ -215,17 +239,16 @@ export function TaskForm({
           </Button>
         )}
       </div>
-    </Field>
+    </PropertyRow>
   )
 
   const categoryField = (
-    <Field>
-      <FieldLabel>Categoría</FieldLabel>
+    <PropertyRow label="Categoría" icon={<Tag />}>
       <Select
         value={values.categoryId ?? NO_CATEGORY}
         onValueChange={(v) => set("categoryId", v === NO_CATEGORY ? null : v)}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger size="sm" className={ghost}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -239,29 +262,28 @@ export function TaskForm({
           ))}
         </SelectContent>
       </Select>
-    </Field>
+    </PropertyRow>
   )
 
   const priorityField = (
-    <Field>
-      <FieldLabel>Prioridad</FieldLabel>
+    <PropertyRow label="Prioridad" icon={<Flag />}>
       <Select
         value={values.priority}
         onValueChange={(v) => set("priority", v as TaskInput["priority"])}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger size="sm" className={ghost}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {PRIORITIES.map((p) => (
             <SelectItem key={p.value} value={p.value}>
-              <span className={cn("size-2 rounded-full", p.className)} />
+              <span className={cn("size-1.5 rounded-full", p.className)} />
               {p.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-    </Field>
+    </PropertyRow>
   )
 
   // El panel solo se monta en el cliente al abrirse, así que navigator está disponible.
@@ -274,28 +296,30 @@ export function TaskForm({
       onKeyDown={onKeyDown}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <FieldGroup>
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+        <FieldGroup className="gap-5">
           {titleField}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <dl className="flex flex-col gap-0.5">
             {dateField}
             {categoryField}
             {priorityField}
-          </div>
-          {task && (
-            <Field orientation="horizontal" className="w-fit">
-              <Switch id="completed" checked={completed} onCheckedChange={onToggleCompleted} />
-              <FieldLabel htmlFor="completed">Completada</FieldLabel>
-            </Field>
-          )}
+            {task && (
+              <PropertyRow label="Estado" icon={<CircleCheck />}>
+                <label className="flex h-7 cursor-pointer items-center gap-2 px-2.5 text-sm">
+                  <Switch id="completed" checked={completed} onCheckedChange={onToggleCompleted} />
+                  {completed ? "Completada" : "Pendiente"}
+                </label>
+              </PropertyRow>
+            )}
+          </dl>
           {descriptionField}
         </FieldGroup>
       </div>
-      <div className="flex items-center gap-2 border-t p-4">
+      <div className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3">
         {task && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button type="button" variant="ghost" className="text-destructive" disabled={pending}>
+              <Button type="button" variant="ghost" className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={pending}>
                 <Trash2 />
                 Eliminar
               </Button>
