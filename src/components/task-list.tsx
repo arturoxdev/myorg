@@ -1,31 +1,22 @@
 "use client"
 
-import { format, isBefore, isToday, isTomorrow, parseISO, startOfToday } from "date-fns"
-import { es } from "date-fns/locale"
-import { CalendarDays, ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { useOptimistic, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import { toggleTask } from "@/actions/tasks"
 import { CategoryIcon } from "@/components/category-icon"
+import { DueBadge, isOverdue, PriorityBadge } from "@/components/task-badges"
 import type { TaskFormCategory } from "@/components/task-form"
 import { TaskSheet } from "@/components/task-sheet"
 import { TaskTitle } from "@/components/task-title"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { Category, Task } from "@/db/schema"
+import { Badge } from "@/components/ui/badge"
 import { useCompleteAnimation } from "@/hooks/use-complete-animation"
-import { getPriority } from "@/lib/priority"
-import { cn } from "@/lib/utils"
 
 type TaskWithCategory = Task & { category: Category | null }
-
-function formatDue(value: string) {
-  const date = parseISO(value)
-  if (isToday(date)) return "Hoy"
-  if (isTomorrow(date)) return "Mañana"
-  return format(date, "d MMM yyyy", { locale: es })
-}
 
 type Props = {
   tasks: TaskWithCategory[]
@@ -84,12 +75,14 @@ export function TaskList({ tasks, categories, grouped = true }: Props) {
   return (
     <>
       {grouped ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <TaskSection title="Pendientes" count={pending.length} defaultOpen>
             {pending.length > 0 ? (
               rows(pending)
             ) : (
-              <li className="px-4 py-3 text-sm text-muted-foreground">No hay tareas pendientes.</li>
+              <li className="px-4 py-6 text-center text-sm text-muted-foreground">
+                No hay tareas pendientes. Buen trabajo.
+              </li>
             )}
           </TaskSection>
           {completed.length > 0 && (
@@ -99,7 +92,9 @@ export function TaskList({ tasks, categories, grouped = true }: Props) {
           )}
         </div>
       ) : (
-        <ul className="divide-y rounded-xl border">{rows(completed)}</ul>
+        <div className="overflow-hidden rounded-xl border border-transparent bg-card ring-1 ring-foreground/10">
+          <ul className="divide-y">{rows(completed)}</ul>
+        </div>
       )}
       <TaskSheet
         open={sheetOpen}
@@ -123,14 +118,19 @@ function TaskSection({
   children: React.ReactNode
 }) {
   return (
-    <Collapsible defaultOpen={defaultOpen} className="group/section flex flex-col gap-2">
-      <CollapsibleTrigger className="flex w-fit cursor-pointer items-center gap-1.5 rounded-sm text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-        <ChevronRight className="size-4 text-muted-foreground transition-transform group-data-[state=open]/section:rotate-90" />
+    <Collapsible
+      defaultOpen={defaultOpen}
+      className="group/section overflow-hidden rounded-xl border border-transparent bg-card ring-1 ring-foreground/10"
+    >
+      <CollapsibleTrigger className="flex h-11 w-full cursor-pointer items-center gap-2 px-4 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset">
+        <ChevronRight className="size-4 text-muted-foreground group-data-[state=open]/section:rotate-90 motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out" />
         {title}
-        <span className="font-normal text-muted-foreground">{count}</span>
+        <Badge variant="secondary" className="h-5 min-w-5 rounded-sm px-1.5 tabular-nums">
+          {count}
+        </Badge>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <ul className="divide-y rounded-xl border">{children}</ul>
+        <ul className="divide-y border-t">{children}</ul>
       </CollapsibleContent>
     </Collapsible>
   )
@@ -148,13 +148,10 @@ function TaskRow({
   onToggle: (id: string, completed: boolean) => void
   onOpen: (task: Task) => void
 }) {
-  const priority = getPriority(task.priority)
-  const overdue = !completed && task.dueDate && isBefore(parseISO(task.dueDate), startOfToday())
-
   return (
-    <li className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
+    <li className="flex items-start gap-3 px-4 transition-colors duration-150 hover:bg-muted/40 sm:items-center">
       <Checkbox
-        className="mt-0.5"
+        className="mt-3 sm:mt-0"
         checked={completed}
         onCheckedChange={(v) => onToggle(task.id, v === true)}
         aria-label={completed ? "Marcar como pendiente" : "Marcar como completada"}
@@ -162,28 +159,22 @@ function TaskRow({
       <button
         type="button"
         onClick={() => onOpen(task)}
-        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-h-14 min-w-0 flex-1 cursor-pointer flex-col justify-center gap-1.5 rounded-sm py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:gap-3"
       >
-        <span className="truncate text-sm font-medium">
-          <TaskTitle completed={completed}>{task.title}</TaskTitle>
-        </span>
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className={cn("size-2 rounded-full", priority.className)} />
-            {priority.label}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate text-sm font-medium">
+            <TaskTitle completed={completed}>{task.title}</TaskTitle>
           </span>
-          {task.dueDate && (
-            <span className={cn("flex items-center gap-1", overdue && "text-destructive")}>
-              <CalendarDays className="size-3" />
-              {formatDue(task.dueDate)}
-            </span>
-          )}
           {task.category && (
-            <span className="flex items-center gap-1">
+            <span className="icon-stroke-regular flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
               <CategoryIcon category={task.category} className="size-3.5 text-xs" />
-              {task.category.name}
+              <span className="truncate">{task.category.name}</span>
             </span>
           )}
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {task.dueDate && <DueBadge dueDate={task.dueDate} overdue={isOverdue(task.dueDate, completed)} />}
+          <PriorityBadge priority={task.priority} />
         </span>
       </button>
     </li>

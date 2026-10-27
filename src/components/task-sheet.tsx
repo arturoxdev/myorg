@@ -57,7 +57,7 @@ export function TaskSheet({
       {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent
         ref={contentRef}
-        className="w-full outline-none data-[side=right]:sm:max-w-xl"
+        className="w-full gap-0 outline-none data-[side=right]:sm:max-w-xl"
         onOpenAutoFocus={(e) => {
           // Al crear, el cursor va directo al título para empezar a escribir.
           // Al ver una tarea existente no se enfoca ni selecciona ningún campo:
@@ -67,9 +67,9 @@ export function TaskSheet({
           ;(input ?? contentRef.current)?.focus()
         }}
       >
-        <SheetHeader>
-          <SheetTitle>{task ? "Tarea" : "Nueva tarea"}</SheetTitle>
-          <SheetDescription>
+        <SheetHeader className="h-12 shrink-0 justify-center border-b py-0 ps-4 pe-12">
+          <SheetTitle className="text-sm">{task ? "Detalle de la tarea" : "Nueva tarea"}</SheetTitle>
+          <SheetDescription className="sr-only">
             {task ? "Revisa o edita los detalles de la tarea." : "Completa los detalles; solo el título es obligatorio."}
           </SheetDescription>
         </SheetHeader>

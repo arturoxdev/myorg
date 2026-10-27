@@ -16,9 +16,9 @@ type Crumb = { label: string; href?: string }
 
 export function PageHeader({ crumbs, children }: { crumbs: Crumb[]; children?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+    <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background ps-3 pe-2">
+      <SidebarTrigger className="text-muted-foreground" />
+      <Separator orientation="vertical" className="me-1 data-vertical:h-4 data-vertical:self-center" />
       <Breadcrumb>
         <BreadcrumbList>
           {crumbs.map((crumb, i) => {
@@ -40,7 +40,7 @@ export function PageHeader({ crumbs, children }: { crumbs: Crumb[]; children?: R
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      {children && <div className="ml-auto flex items-center gap-2">{children}</div>}
+      {children && <div className="ms-auto flex items-center gap-1.5">{children}</div>}
     </header>
   )
 }

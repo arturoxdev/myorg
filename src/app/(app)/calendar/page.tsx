@@ -9,6 +9,7 @@ import { CalendarBoard } from "@/components/calendar-board"
 import { PageHeader } from "@/components/page-header"
 import { PageSkeleton } from "@/components/page-skeleton"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { getCalendarTasks, getCategories } from "@/db/queries"
 
 const DAYS = 7
@@ -35,26 +36,26 @@ async function Content({ searchParams }: Pick<PageProps<"/calendar">, "searchPar
   ])
 
   return (
-    <div className="flex h-svh flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader crumbs={[{ label: "Tareas", href: "/" }, { label: "Calendario" }]}>
-        <span className="hidden text-sm text-muted-foreground sm:block">
+        <span className="hidden text-sm text-muted-foreground tabular-nums sm:block">
           {format(first, "d MMM", { locale: es })} – {format(last, "d MMM yyyy", { locale: es })}
         </span>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/calendar">Hoy</Link>
-        </Button>
-        <div className="flex">
-          <Button variant="ghost" size="icon-sm" asChild>
+        <ButtonGroup>
+          <Button variant="outline" size="icon-sm" asChild>
             <Link href={`/calendar?start=${toKey(addDays(first, -DAYS))}`} aria-label="Semana anterior">
               <ChevronLeft />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon-sm" asChild>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/calendar">Hoy</Link>
+          </Button>
+          <Button variant="outline" size="icon-sm" asChild>
             <Link href={`/calendar?start=${toKey(addDays(first, DAYS))}`} aria-label="Semana siguiente">
               <ChevronRight />
             </Link>
           </Button>
-        </div>
+        </ButtonGroup>
       </PageHeader>
       <CalendarBoard tasks={tasks} categories={categories} days={days} today={today} />
     </div>

@@ -1,10 +1,11 @@
 "use client"
 
-import { CalendarDays, CalendarClock, CalendarRange, CheckCircle2, CheckSquare, Inbox, Plus } from "lucide-react"
+import { CalendarDays, CalendarClock, CalendarRange, CheckCircle2, Inbox, Plus } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import * as React from "react"
 
+import { AppLogo } from "@/components/app-logo"
 import { CategoryDialog } from "@/components/category-dialog"
 import { CategoryIcon } from "@/components/category-icon"
 import { CategoryMenu } from "@/components/category-menu"
@@ -54,17 +55,17 @@ export function AppSidebar({
   const pathname = usePathname()
 
   return (
-    <Sidebar {...props}>
+    <Sidebar variant="inset" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            {/* rounded-2xl = radio del logo (10px) + el inset de 8px del botón. */}
+            <SidebarMenuButton size="lg" className="rounded-2xl" asChild>
               <Link href="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <CheckSquare className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Tareas</span>
+                {/* size-8! le gana al [&_svg]:size-4 del botón. */}
+                <AppLogo className="size-8! rounded-lg shadow-xs" />
+                <div className="flex flex-col gap-1 leading-none">
+                  <span className="font-semibold tracking-tight">Tareas</span>
                   <span className="text-xs text-muted-foreground">Gestor personal</span>
                 </div>
               </Link>
@@ -84,10 +85,10 @@ export function AppSidebar({
                   categories={categories}
                   defaultCategoryId={categoryIdFromPath(pathname)}
                 >
-                  <SidebarMenuButton>
+                  <SidebarMenuButton variant="outline" className="font-medium">
                     <Plus />
                     Nueva tarea
-                    <Kbd className="ml-auto uppercase">{NEW_TASK_KEY}</Kbd>
+                    <Kbd className="ms-auto uppercase">{NEW_TASK_KEY}</Kbd>
                   </SidebarMenuButton>
                 </NewTaskSheet>
               </SidebarMenuItem>
@@ -131,7 +132,7 @@ export function AppSidebar({
                   </SidebarMenuButton>
                   {category.pending > 0 && (
                     // Se oculta al pasar el mouse para dejar sitio al menú "⋯".
-                    <SidebarMenuBadge className="transition-opacity group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0">
+                    <SidebarMenuBadge className="font-normal text-muted-foreground tabular-nums transition-opacity duration-150 group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0">
                       {category.pending}
                     </SidebarMenuBadge>
                   )}

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function AppSidebarSkeleton() {
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
         <Skeleton className="h-12 w-full rounded-lg" />
         <Skeleton className="h-8 w-full" />
