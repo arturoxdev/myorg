@@ -35,7 +35,7 @@ export function NavUser({ username }: { username: string }) {
               <ChevronsUpDown className="ms-auto text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width)" side="top" align="start" sideOffset={6}>
+          <DropdownMenuContent className="w-(--radix-dropdown-menu-trigger-width) min-w-56" side="top" align="start" sideOffset={6}>
             <DropdownMenuLabel className="text-xs text-muted-foreground">Sesión iniciada</DropdownMenuLabel>
             <DropdownMenuItem onSelect={() => logout()}>
               <LogOut />

@@ -10,8 +10,9 @@ export function SearchForm({ ...props }: React.ComponentProps<"form">) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   // La búsqueda se aplica sobre la vista actual.
+  // Con el sidebar colapsado a íconos no hay sitio para el campo.
   return (
-    <form action={pathname} {...props}>
+    <form action={pathname} className="group-data-[collapsible=icon]:hidden" {...props}>
       <SidebarGroup className="py-0">
         <SidebarGroupContent className="relative">
           <Label htmlFor="search" className="sr-only">

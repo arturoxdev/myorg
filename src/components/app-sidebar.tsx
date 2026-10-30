@@ -55,12 +55,12 @@ export function AppSidebar({
   const pathname = usePathname()
 
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             {/* rounded-2xl = radio del logo (10px) + el inset de 8px del botón. */}
-            <SidebarMenuButton size="lg" className="rounded-2xl" asChild>
+            <SidebarMenuButton size="lg" className="rounded-2xl" tooltip="Tareas" asChild>
               <Link href="/">
                 {/* size-8! le gana al [&_svg]:size-4 del botón. */}
                 <AppLogo className="size-8! rounded-lg shadow-xs" />
@@ -85,10 +85,10 @@ export function AppSidebar({
                   categories={categories}
                   defaultCategoryId={categoryIdFromPath(pathname)}
                 >
-                  <SidebarMenuButton variant="outline" className="font-medium">
+                  <SidebarMenuButton variant="outline" className="font-medium" tooltip="Nueva tarea">
                     <Plus />
                     Nueva tarea
-                    <Kbd className="ms-auto uppercase">{NEW_TASK_KEY}</Kbd>
+                    <Kbd className="ms-auto uppercase group-data-[collapsible=icon]:hidden">{NEW_TASK_KEY}</Kbd>
                   </SidebarMenuButton>
                 </NewTaskSheet>
               </SidebarMenuItem>
@@ -101,7 +101,7 @@ export function AppSidebar({
             <SidebarMenu>
               {views.map((item) => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
                     <Link href={item.url}>
                       <item.icon />
                       {item.title}
@@ -124,7 +124,11 @@ export function AppSidebar({
             <SidebarMenu>
               {categories.map((category) => (
                 <SidebarMenuItem key={category.id}>
-                  <SidebarMenuButton asChild isActive={pathname === `/categories/${category.id}`}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === `/categories/${category.id}`}
+                    tooltip={category.name}
+                  >
                     <Link href={`/categories/${category.id}`}>
                       <CategoryIcon category={category} />
                       <span>{category.name}</span>
@@ -142,7 +146,7 @@ export function AppSidebar({
               {categories.length === 0 && (
                 <SidebarMenuItem>
                   <CategoryDialog>
-                    <SidebarMenuButton className="text-muted-foreground">
+                    <SidebarMenuButton className="text-muted-foreground" tooltip="Crear categoría">
                       <Plus />
                       Crear categoría
                     </SidebarMenuButton>
