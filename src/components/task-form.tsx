@@ -105,16 +105,28 @@ export function TaskForm({
     setValues((v) => ({ ...v, [key]: value }))
   }
 
+  // `pending` no cambia hasta el siguiente render, así que un doble envío
+  // (doble clic, Enter repetido) se bloquea con un ref. Tras guardar con éxito
+  // queda bloqueado: el panel se está cerrando.
+  const submitting = useRef(false)
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitting.current) return
+    submitting.current = true
     startTransition(async () => {
-      const result = await saveTask(task?.id ?? null, values)
-      if (!result.ok) {
-        toast.error(result.error)
-        return
+      let ok = false
+      try {
+        const result = await saveTask(task?.id ?? null, values)
+        if (!result.ok) {
+          toast.error(result.error)
+          return
+        }
+        ok = true
+        toast.success(task ? "Tarea actualizada" : "Tarea creada")
+        onDone()
+      } finally {
+        if (!ok) submitting.current = false
       }
-      toast.success(task ? "Tarea actualizada" : "Tarea creada")
-      onDone()
     })
   }
 
@@ -159,8 +171,9 @@ export function TaskForm({
   }, [values.title])
 
   // El título es de una sola línea: Enter envía el formulario como en un input.
+  // ⌘/Ctrl + Enter lo maneja el formulario; aquí se enviaría dos veces.
   function onTitleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return
+    if (e.key !== "Enter" || e.shiftKey || e.metaKey || e.ctrlKey || e.nativeEvent.isComposing) return
     e.preventDefault()
     if (!pending && !uploading) formRef.current?.requestSubmit()
   }
